@@ -1,6 +1,7 @@
 # For our project:
+data/
+delta/
 local/
-datasets/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
