@@ -1,0 +1,1247 @@
+{
+  "datasets": [
+    {
+      "name": "dataset1",
+      "displayName": "train_test_table",
+      "queryLines": [
+        "SELECT * FROM workspace.`ds-datasets`.train_test_table"
+      ],
+      "columns": [
+        {
+          "displayName": "Churn Status",
+          "description": "Customer churn indicator",
+          "expression": "CASE WHEN `Target` = 1 THEN 'Churned' ELSE 'Retained' END"
+        },
+        {
+          "displayName": "Tenure Segment",
+          "description": "Customer tenure grouping",
+          "expression": "CASE WHEN `Tenure_Years` < 1 THEN '< 1 year' WHEN `Tenure_Years` < 3 THEN '1-3 years' WHEN `Tenure_Years` < 5 THEN '3-5 years' ELSE '5+ years' END"
+        },
+        {
+          "displayName": "Payment Method",
+          "description": "Payment method type",
+          "expression": "CASE WHEN `is_card_payment` = 1 THEN 'Card Payment' ELSE 'Other Payment' END"
+        },
+        {
+          "displayName": "Has Anchoring",
+          "description": "Current anchoring status",
+          "expression": "CASE WHEN `Current_Anchorings` > 0 THEN 'Has Anchoring' ELSE 'No Anchoring' END"
+        },
+        {
+          "displayName": "Sentiment Category",
+          "description": "Sentiment score category",
+          "expression": "CASE WHEN `crm_contractor_sentiment_score` >= 0.7 THEN 'Positive' WHEN `crm_contractor_sentiment_score` >= 0.4 THEN 'Neutral' ELSE 'Negative' END"
+        },
+        {
+          "displayName": "Join Year",
+          "description": "Estimated year customer joined based on tenure",
+          "expression": "CAST(2026 - FLOOR(`Tenure_Years`) AS STRING)"
+        },
+        {
+          "displayName": "Join Quarter",
+          "description": "Estimated quarter customer joined",
+          "expression": "CONCAT('Q', CAST(CEIL((12 - ((`Tenure_Years` - FLOOR(`Tenure_Years`)) * 12)) / 3) AS STRING), ' ', CAST(2026 - FLOOR(`Tenure_Years`) AS STRING))"
+        },
+        {
+          "displayName": "Tenure Group",
+          "description": "Granular tenure grouping",
+          "expression": "CASE WHEN `Tenure_Years` < 0.5 THEN '0-6 months' WHEN `Tenure_Years` < 1 THEN '6-12 months' WHEN `Tenure_Years` < 2 THEN '1-2 years' WHEN `Tenure_Years` < 3 THEN '2-3 years' WHEN `Tenure_Years` < 5 THEN '3-5 years' ELSE '5+ years' END"
+        },
+        {
+          "displayName": "Join Month",
+          "description": "Estimated year-month customer joined (YYYY-MM format)",
+          "expression": "CONCAT(CAST(2026 - FLOOR(`Tenure_Years`) AS STRING), '-', LPAD(CAST(CAST(12 - ((`Tenure_Years` - FLOOR(`Tenure_Years`)) * 12) AS INT) AS STRING), 2, '0'))"
+        },
+        {
+          "displayName": "Sentiment Data Status",
+          "description": "Whether sentiment data is available or missing",
+          "expression": "CASE WHEN `crm_sentiment_missing` = 1 THEN 'Sentiment Missing' ELSE 'Sentiment Available' END"
+        }
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "page1",
+      "displayName": "Dataset Analysis",
+      "layout": [
+        {
+          "widget": {
+            "name": "bar_chart1",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "dataset1",
+                  "fields": [
+                    {
+                      "name": "Tenure Segment",
+                      "expression": "`Tenure Segment`"
+                    },
+                    {
+                      "name": "Churn Status",
+                      "expression": "`Churn Status`"
+                    },
+                    {
+                      "name": "count(*)",
+                      "expression": "COUNT(`*`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "title": "Customer Churn Distribution",
+                "showTitle": true
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "Churn Status",
+                  "displayName": "Churn Status",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "count(*)",
+                  "displayName": "Customer Count",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "Tenure Segment",
+                  "displayName": "Tenure Segment",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 59,
+            "width": 6,
+            "height": 8
+          }
+        },
+        {
+          "widget": {
+            "name": "counter_total",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "dataset1",
+                  "fields": [
+                    {
+                      "name": "countdistinct(Co_Ref)",
+                      "expression": "COUNT(DISTINCT `Co_Ref`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "title": "Total Customers",
+                "showTitle": true
+              },
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "countdistinct(Co_Ref)",
+                  "displayName": "Total Customers"
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "counter_churn_rate",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "dataset1",
+                  "fields": [
+                    {
+                      "name": "avg(Target)",
+                      "expression": "AVG(`Target`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "title": "Churn Rate",
+                "showTitle": true
+              },
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "avg(Target)",
+                  "format": {
+                    "type": "number-percent",
+                    "decimalPlaces": {
+                      "type": "exact",
+                      "places": 1
+                    }
+                  },
+                  "displayName": "Churn Rate"
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 0,
+            "width": 3,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "counter_churned",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "dataset1",
+                  "fields": [
+                    {
+                      "name": "sum(Target)",
+                      "expression": "SUM(`Target`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "title": "Churned Customers",
+                "showTitle": true
+              },
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "sum(Target)",
+                  "displayName": "Churned"
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 0,
+            "width": 3,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "counter_tenure",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "dataset1",
+                  "fields": [
+                    {
+                      "name": "avg(Tenure_Years)",
+                      "expression": "AVG(`Tenure_Years`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "title": "Avg Customer Tenure",
+                "showTitle": true
+              },
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "avg(Tenure_Years)",
+                  "format": {
+                    "type": "number-plain",
+                    "decimalPlaces": {
+                      "type": "exact",
+                      "places": 1
+                    },
+                    "abbreviation": "none"
+                  },
+                  "displayName": "Avg Tenure (Years)"
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 9,
+            "y": 0,
+            "width": 3,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "churn_by_payment",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "dataset1",
+                  "fields": [
+                    {
+                      "name": "Churn Status",
+                      "expression": "`Churn Status`"
+                    },
+                    {
+                      "name": "Payment Method",
+                      "expression": "`Payment Method`"
+                    },
+                    {
+                      "name": "count(*)",
+                      "expression": "COUNT(`*`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "title": "Churn by Payment Method",
+                "showTitle": true
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "Payment Method",
+                  "displayName": "Payment Method",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "count(*)",
+                  "displayName": "Customer Count",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "Churn Status",
+                  "displayName": "Churn Status",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 3,
+            "width": 6,
+            "height": 8
+          }
+        },
+        {
+          "widget": {
+            "name": "churn_by_anchoring",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "dataset1",
+                  "fields": [
+                    {
+                      "name": "Churn Status",
+                      "expression": "`Churn Status`"
+                    },
+                    {
+                      "name": "Has Anchoring",
+                      "expression": "`Has Anchoring`"
+                    },
+                    {
+                      "name": "count(*)",
+                      "expression": "COUNT(`*`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "title": "Churn by Anchoring Status",
+                "showTitle": true
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "Has Anchoring",
+                  "displayName": "Anchoring Status",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "count(*)",
+                  "displayName": "Customer Count",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "Churn Status",
+                  "displayName": "Churn Status",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 3,
+            "width": 6,
+            "height": 8
+          }
+        },
+        {
+          "widget": {
+            "name": "churn_by_sentiment",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "dataset1",
+                  "fields": [
+                    {
+                      "name": "Churn Status",
+                      "expression": "`Churn Status`"
+                    },
+                    {
+                      "name": "Sentiment Category",
+                      "expression": "`Sentiment Category`"
+                    },
+                    {
+                      "name": "count(*)",
+                      "expression": "COUNT(`*`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "title": "Churn by Sentiment Score",
+                "showTitle": true
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "Sentiment Category",
+                  "displayName": "Sentiment",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "count(*)",
+                  "displayName": "Customer Count",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "Churn Status",
+                  "displayName": "Churn Status",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 11,
+            "width": 6,
+            "height": 8
+          }
+        },
+        {
+          "widget": {
+            "name": "pricing_issues",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "dataset1",
+                  "fields": [
+                    {
+                      "name": "Churn Status",
+                      "expression": "`Churn Status`"
+                    },
+                    {
+                      "name": "avg(crm_dissatisified_with_renewal_price)",
+                      "expression": "AVG(`crm_dissatisified_with_renewal_price`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "title": "Pricing Issues Impact on Churn",
+                "showTitle": true
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "Churn Status",
+                  "displayName": "Churn Status",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "avg(crm_dissatisified_with_renewal_price)",
+                  "format": {
+                    "type": "number-plain",
+                    "decimalPlaces": {
+                      "type": "exact",
+                      "places": 2
+                    },
+                    "abbreviation": "none"
+                  },
+                  "displayName": "Avg Price Dissatisfaction",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "Churn Status",
+                  "displayName": "Churn Status",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 43,
+            "width": 6,
+            "height": 8
+          }
+        },
+        {
+          "widget": {
+            "name": "support_issues",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "dataset1",
+                  "fields": [
+                    {
+                      "name": "Churn Status",
+                      "expression": "`Churn Status`"
+                    },
+                    {
+                      "name": "avg(crm_dissatisfaction_with_support)",
+                      "expression": "AVG(`crm_dissatisfaction_with_support`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "title": "Support Dissatisfaction by Churn",
+                "showTitle": true
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "Churn Status",
+                  "displayName": "Churn Status",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "avg(crm_dissatisfaction_with_support)",
+                  "format": {
+                    "type": "number-plain",
+                    "decimalPlaces": {
+                      "type": "exact",
+                      "places": 2
+                    },
+                    "abbreviation": "none"
+                  },
+                  "displayName": "Avg Support Dissatisfaction",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "Churn Status",
+                  "displayName": "Churn Status",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 11,
+            "width": 6,
+            "height": 8
+          }
+        },
+        {
+          "widget": {
+            "name": "churn_drivers_table",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "dataset1",
+                  "fields": [
+                    {
+                      "name": "Co_Ref",
+                      "expression": "`Co_Ref`"
+                    },
+                    {
+                      "name": "Churn Status",
+                      "expression": "`Churn Status`"
+                    },
+                    {
+                      "name": "Tenure_Years",
+                      "expression": "`Tenure_Years`"
+                    },
+                    {
+                      "name": "crm_contractor_sentiment_score",
+                      "expression": "`crm_contractor_sentiment_score`"
+                    },
+                    {
+                      "name": "crm_dissatisified_with_renewal_price",
+                      "expression": "`crm_dissatisified_with_renewal_price`"
+                    },
+                    {
+                      "name": "crm_dissatisfaction_with_support",
+                      "expression": "`crm_dissatisfaction_with_support`"
+                    },
+                    {
+                      "name": "crm_negative_customer_experience",
+                      "expression": "`crm_negative_customer_experience`"
+                    },
+                    {
+                      "name": "Current_Anchorings",
+                      "expression": "`Current_Anchorings`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "title": "Key Churn Drivers by Customer",
+                "showTitle": true
+              },
+              "rowsPerPage": 25,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "Co_Ref",
+                    "displayName": "Customer ID"
+                  },
+                  {
+                    "fieldName": "Churn Status",
+                    "displayName": "Status"
+                  },
+                  {
+                    "fieldName": "Tenure_Years",
+                    "displayName": "Tenure"
+                  },
+                  {
+                    "fieldName": "crm_contractor_sentiment_score",
+                    "displayName": "Sentiment"
+                  },
+                  {
+                    "fieldName": "crm_dissatisified_with_renewal_price",
+                    "displayName": "Price Issues"
+                  },
+                  {
+                    "fieldName": "crm_dissatisfaction_with_support",
+                    "displayName": "Support Issues"
+                  },
+                  {
+                    "fieldName": "crm_negative_customer_experience",
+                    "displayName": "Negative Experience"
+                  },
+                  {
+                    "fieldName": "Current_Anchorings",
+                    "displayName": "Anchorings"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 19,
+            "width": 12,
+            "height": 8
+          }
+        },
+        {
+          "widget": {
+            "name": "churn_by_year",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "dataset1",
+                  "fields": [
+                    {
+                      "name": "Join Year",
+                      "expression": "`Join Year`"
+                    },
+                    {
+                      "name": "avg(Target)",
+                      "expression": "AVG(`Target`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "title": "Churn Rate by Join Year",
+                "showTitle": true
+              },
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "Join Year",
+                  "displayName": "Join Year",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "avg(Target)",
+                  "format": {
+                    "type": "number-plain",
+                    "decimalPlaces": {
+                      "type": "exact",
+                      "places": 1
+                    },
+                    "abbreviation": "none"
+                  },
+                  "displayName": "Churn Rate %",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 27,
+            "width": 6,
+            "height": 8
+          }
+        },
+        {
+          "widget": {
+            "name": "churn_by_quarter",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "dataset1",
+                  "fields": [
+                    {
+                      "name": "Churn Status",
+                      "expression": "`Churn Status`"
+                    },
+                    {
+                      "name": "Join Quarter",
+                      "expression": "`Join Quarter`"
+                    },
+                    {
+                      "name": "count(*)",
+                      "expression": "COUNT(`*`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "title": "Churn Distribution by Join Quarter",
+                "showTitle": true
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "Join Quarter",
+                  "displayName": "Join Quarter",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "count(*)",
+                  "displayName": "Customer Count",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "Churn Status",
+                  "displayName": "Churn Status",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 27,
+            "width": 6,
+            "height": 8
+          }
+        },
+        {
+          "widget": {
+            "name": "yearly_summary",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "dataset1",
+                  "fields": [
+                    {
+                      "name": "Join Year",
+                      "expression": "`Join Year`"
+                    },
+                    {
+                      "name": "count(*)",
+                      "expression": "COUNT(`*`)"
+                    },
+                    {
+                      "name": "sum(Target)",
+                      "expression": "SUM(`Target`)"
+                    },
+                    {
+                      "name": "avg(Target)",
+                      "expression": "AVG(`Target`)"
+                    },
+                    {
+                      "name": "avg(Tenure_Years)",
+                      "expression": "AVG(`Tenure_Years`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "title": "Year-wise Churn Summary",
+                "showTitle": true
+              },
+              "rowsPerPage": 25,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "Join Year",
+                    "displayName": "Year"
+                  },
+                  {
+                    "fieldName": "count(*)",
+                    "displayName": "Total Customers"
+                  },
+                  {
+                    "fieldName": "sum(Target)",
+                    "displayName": "Churned"
+                  },
+                  {
+                    "fieldName": "count(*)",
+                    "displayName": "Retained"
+                  },
+                  {
+                    "fieldName": "avg(Target)",
+                    "displayName": "Churn Rate %"
+                  },
+                  {
+                    "fieldName": "avg(Tenure_Years)",
+                    "displayName": "Avg Tenure"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 35,
+            "width": 12,
+            "height": 8
+          }
+        },
+        {
+          "widget": {
+            "name": "tenure_trend",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "dataset1",
+                  "fields": [
+                    {
+                      "name": "Tenure Group",
+                      "expression": "`Tenure Group`"
+                    },
+                    {
+                      "name": "avg(Target)",
+                      "expression": "AVG(`Target`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "title": "Churn Rate by Tenure Group",
+                "showTitle": true
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "Tenure Group",
+                  "displayName": "Tenure Group",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "avg(Target)",
+                  "format": {
+                    "type": "number-plain",
+                    "decimalPlaces": {
+                      "type": "exact",
+                      "places": 1
+                    },
+                    "abbreviation": "none"
+                  },
+                  "displayName": "Churn Rate %",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 43,
+            "width": 6,
+            "height": 8
+          }
+        },
+        {
+          "widget": {
+            "name": "quarter_comparison",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "dataset1",
+                  "fields": [
+                    {
+                      "name": "Churn Status",
+                      "expression": "`Churn Status`"
+                    },
+                    {
+                      "name": "monthly(Join Year)",
+                      "expression": "DATE_TRUNC(\"MONTH\", `Join Year`)"
+                    },
+                    {
+                      "name": "count(*)",
+                      "expression": "COUNT(`*`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "title": "Customer Volume by Join Quarter",
+                "showTitle": true
+              },
+              "mark": {
+                "layout": "stack"
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "monthly(Join Year)",
+                  "scale": {
+                    "type": "temporal"
+                  }
+                },
+                "y": {
+                  "fieldName": "count(*)",
+                  "format": {
+                    "type": "number-plain",
+                    "abbreviation": "compact",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 2
+                    }
+                  },
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "Churn Status",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "label": {
+                  "show": false
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 59,
+            "width": 6,
+            "height": 8
+          }
+        },
+        {
+          "widget": {
+            "name": "monthly_churn_rate",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "dataset1",
+                  "fields": [
+                    {
+                      "name": "Join Month",
+                      "expression": "`Join Month`"
+                    },
+                    {
+                      "name": "avg(Target)",
+                      "expression": "AVG(`Target`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "title": "Monthly Churn Rate Trend",
+                "showTitle": true
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "Join Month",
+                  "displayName": "Join Month",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "avg(Target)",
+                  "displayName": "Churn Rate %",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 51,
+            "width": 12,
+            "height": 8
+          }
+        },
+        {
+          "widget": {
+            "name": "monthly_volume",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "dataset1",
+                  "fields": [
+                    {
+                      "name": "Churn Status",
+                      "expression": "`Churn Status`"
+                    },
+                    {
+                      "name": "Join Month",
+                      "expression": "`Join Month`"
+                    },
+                    {
+                      "name": "count(*)",
+                      "expression": "COUNT(`*`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "title": "Monthly Customer Volume: Churned vs Retained",
+                "showTitle": true
+              },
+              "mark": {
+                "layout": "stack"
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "Join Month",
+                  "displayName": "Join Month",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "count(*)",
+                  "displayName": "Customer Count",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "Churn Status",
+                  "displayName": "Churn Status",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 67,
+            "width": 12,
+            "height": 8
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    }
+  ],
+  "uiSettings": {
+    "theme": {
+      "widgetHeaderAlignment": "ALIGNMENT_UNSPECIFIED"
+    },
+    "applyModeEnabled": false
+  }
+}
