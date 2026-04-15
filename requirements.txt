@@ -1,6 +1,0 @@
-dotenv
-pyspark
-pandas
-openpyxl
-delta-spark
-s3fs
